@@ -6,6 +6,7 @@
  * Copyright (C) 2010 by Martin DeMello <martindemello@gmail.com>
  * Changes:
  * * Added wildcards ('*' = 0 or more blanks)
+ * * Output to a gee_array_list rather than stdout
  *
  */
 
@@ -16,7 +17,8 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <glib.h>
+#include <gee.h>
+#include <string.h>
 
 #include "splib.h"
 
@@ -35,6 +37,8 @@ putWord(word, blanks, i);
 
 #endif
 
+#define D gee_iterator_get
+
 void putRack(unsigned int *count) {
   register int i, j;
   for (i=0; i<256; i++) for (j=0; j<count[i]; j++) putchar(i);
@@ -44,13 +48,13 @@ void putWord(char *chars, char *blanks, int length) {
   register char ch;
   while (length--) {
     ch = *chars++;
-    *blanks++ ? putchar(ch ^ ('a'-'A')) : putchar(ch); /* ASCIIism */
+    *blanks++ == 1 ? putchar(ch ^ ('a'-'A')) : putchar(ch); /* ASCIIism */
   }
   putchar('\n');
   return;
 }
 
-void processRack(NODE *dawg, register char *rack, int bingosOnly, GList** retwords, GList** retblanks) {
+void dawg_anagrams(NODE *dawg, register char *rack, int bingosOnly, GeeArrayList* retwords, GeeArrayList* retblanks) {
   unsigned int       bingoLength = 0;
   char               blanks[MAXWORD];
   int                wilds[MAXWORD];
@@ -85,7 +89,7 @@ void processRack(NODE *dawg, register char *rack, int bingosOnly, GList** retwor
       u = (*edge >> V_LETTER) & M_LETTER;     /* u = char at this node       */
       if (nChars[u]) {                        /* if still a u on rack        */
         nChars[u]--;                            /* take it off the rack      */
-        blanks[i] = 0;                          /* not a blank               */
+        blanks[i] = 2;                          /* not a blank               */
         wilds[i] = 0;
         used_chars++;                         /* we have used a character    */
         goto added_letter;
@@ -104,13 +108,13 @@ added_letter:
         word[i] = u;
         if (*edge & M_END_OF_WORD) {              /* if we have a word       */
           if (bingoLength <= used_chars) {                   /* if it's long enough   */
-            *retwords = g_list_append(*retwords, g_strndup(word, i+1));
-            *retblanks = g_list_append(*retblanks, g_memdup(blanks, i+1));
+            gee_collection_add(GEE_COLLECTION (retwords), g_strndup(word, i+1));
+            gee_collection_add(GEE_COLLECTION (retblanks), g_memdup(blanks, i+1));
             goto unadd;
           }
           if (!bingosOnly) {                        /* if we don't care       */
-            *retwords = g_list_append(*retwords, g_strndup(word, i+1));
-            *retblanks = g_list_append(*retblanks, g_memdup(blanks, i+1));
+            gee_collection_add(GEE_COLLECTION (retwords), g_strndup(word, i+1));
+            gee_collection_add(GEE_COLLECTION (retblanks), g_memdup(blanks, i+1));
           }
         }
         if (*edge & M_NODE_POINTER) {             /* can we go deeper?       */
@@ -123,7 +127,7 @@ added_letter:
         }
 unadd:
         if (!wilds[i]) {
-          blanks[i] ? nBlanks++ : nChars[u]++;
+          blanks[i] == 1 ? nBlanks++ : nChars[u]++;
           used_chars--;
         }
       }
@@ -134,7 +138,7 @@ up:
         PR_DUMP("up", i, edge, stemEdges[i])
 #endif
         if (!wilds[i]) {
-          blanks[i] ? nBlanks++ : nChars[word[i]]++;
+          blanks[i] == 1 ? nBlanks++ : nChars[word[i]]++;
           used_chars--;
         }
         edge = stemEdges[i];
@@ -147,6 +151,7 @@ up:
   return;
 }
 
+#if 0
 int main(unsigned argc, char **argv) {
   int           bingosOnly = 1;
   NODE         *dawg;
@@ -157,11 +162,12 @@ int main(unsigned argc, char **argv) {
   extern int    optind;
   extern char  *optarg;
   char         *rackString = 0;
-  GList        *output = NULL;
-  GList        *blanks = NULL;
-  GList        *li;
-  GList        *lj;
+  GeeArrayList        *output;
+  GeeArrayList        *blanks;
+  GeeIterator *li, *lj;
   int q;
+
+  g_type_init ();
 
   while (EOF != (i = getopt(argc, argv, "abd:r:"))) switch(i) {
     case 'a': bingosOnly = 0; break;
@@ -182,14 +188,20 @@ int main(unsigned argc, char **argv) {
 
   if (!dawg_init(dictFileName, &dawg, &nedges)) exit(2);
 
-
-  processRack(dawg, rackString, bingosOnly, &output, &blanks);
-  for(li = output, lj = blanks; li!= NULL; li = g_list_next(li), lj = g_list_next(lj)) {
-    char *string = li->data;
-    char *blanks = lj->data;
-    putWord(string, blanks, strlen(string));
+  output = gee_array_list_new (G_TYPE_STRING, ((GBoxedCopyFunc) g_strdup), g_free, g_direct_equal);
+  blanks = gee_array_list_new (G_TYPE_STRING, ((GBoxedCopyFunc) g_strdup), g_free, g_direct_equal);
+  dawg_anagrams(dawg, rackString, bingosOnly, output, blanks);
+  printf("%d\n", gee_collection_get_size( GEE_COLLECTION(output)));
+  li = gee_iterable_iterator (GEE_ITERABLE (output));
+  lj = gee_iterable_iterator (GEE_ITERABLE (blanks));
+  char *w, *b;
+  while (gee_iterator_next(li)) {
+    gee_iterator_next(lj);
+    w = (char *) gee_iterator_get(li);
+    b = (char *) gee_iterator_get(lj);
+    putWord(w, b, strlen(w));
   }
 
   exit(0);
 }
-
+#endif
