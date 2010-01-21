@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <glib.h>
 
 #include "splib.h"
 
@@ -39,7 +40,7 @@ void putRack(unsigned int *count) {
   for (i=0; i<256; i++) for (j=0; j<count[i]; j++) putchar(i);
 }
 
-void putWord(char *chars, int *blanks, int length) {
+void putWord(char *chars, char *blanks, int length) {
   register char ch;
   while (length--) {
     ch = *chars++;
@@ -49,9 +50,9 @@ void putWord(char *chars, int *blanks, int length) {
   return;
 }
 
-void processRack(NODE *dawg, register char *rack, int bingosOnly) {
+void processRack(NODE *dawg, register char *rack, int bingosOnly, GList** retwords, GList** retblanks) {
   unsigned int       bingoLength = 0;
-  int                blanks[MAXWORD];
+  char               blanks[MAXWORD];
   int                wilds[MAXWORD];
   NODE              *edge;
   register int       i;
@@ -62,6 +63,7 @@ void processRack(NODE *dawg, register char *rack, int bingosOnly) {
   unsigned int       nChars[256];
   NODE              *stemEdges[MAXWORD];
   char               word[MAXWORD];
+  int               q;
 
   (void) memset(&nChars[0], 0, sizeof nChars);
   while (u = *rack++) {
@@ -102,11 +104,14 @@ added_letter:
         word[i] = u;
         if (*edge & M_END_OF_WORD) {              /* if we have a word       */
           if (bingoLength <= used_chars) {                   /* if it's long enough   */
-            putWord(word, blanks, i+1);
+            *retwords = g_list_append(*retwords, g_strndup(word, i+1));
+            *retblanks = g_list_append(*retblanks, g_memdup(blanks, i+1));
             goto unadd;
           }
-          if (!bingosOnly)                         /* if we don't care       */
-            putWord(word, blanks, i+1);
+          if (!bingosOnly) {                        /* if we don't care       */
+            *retwords = g_list_append(*retwords, g_strndup(word, i+1));
+            *retblanks = g_list_append(*retblanks, g_memdup(blanks, i+1));
+          }
         }
         if (*edge & M_NODE_POINTER) {             /* can we go deeper?       */
 #ifdef DEBUG
@@ -152,6 +157,11 @@ int main(unsigned argc, char **argv) {
   extern int    optind;
   extern char  *optarg;
   char         *rackString = 0;
+  GList        *output = NULL;
+  GList        *blanks = NULL;
+  GList        *li;
+  GList        *lj;
+  int q;
 
   while (EOF != (i = getopt(argc, argv, "abd:r:"))) switch(i) {
     case 'a': bingosOnly = 0; break;
@@ -172,7 +182,13 @@ int main(unsigned argc, char **argv) {
 
   if (!dawg_init(dictFileName, &dawg, &nedges)) exit(2);
 
-  processRack(dawg, rackString, bingosOnly);
+
+  processRack(dawg, rackString, bingosOnly, &output, &blanks);
+  for(li = output, lj = blanks; li!= NULL; li = g_list_next(li), lj = g_list_next(lj)) {
+    char *string = li->data;
+    char *blanks = lj->data;
+    putWord(string, blanks, strlen(string));
+  }
 
   exit(0);
 }
