@@ -1,0 +1,2 @@
+#!/bin/sh
+cc -o $1 $1.c  -L.. -lspell

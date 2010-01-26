@@ -1,0 +1,1032 @@
+#!/bin/sh
+# This is a shell archive (produced by GNU sharutils 4.1).
+# To extract the files from this archive, save it to some FILE, remove
+# everything before the `!/bin/sh' line above, then type `sh FILE'.
+#
+# Made on 1996-11-14 00:06 CST by <root@gtoal.com>.
+# Source directory was `/home/gtoal/src/spell/SpellLib'.
+#
+# Existing files will *not* be overwritten unless `-c' is specified.
+#
+# This shar contains:
+# length mode       name
+# ------ ---------- ------------------------------------------
+#   3626 -rw-r--r-- check.c
+#    259 -rw-r--r-- check.h
+#   5824 -rw-r--r-- init.c
+#    125 -rw-r--r-- init.h
+#    127 -rw-r--r-- pathnames.h
+#   5523 -rw-r--r-- pathopen.c
+#    162 -rw-r--r-- pathopen.h
+#    780 -rw-r--r-- prime.c
+#    154 -rw-r--r-- prime.h
+#   3822 -rw-r--r-- print.c
+#    381 -rw-r--r-- print.h
+#   1541 -rw-r--r-- makefile
+#
+touch -am 1231235999 $$.touch >/dev/null 2>&1
+if test ! -f 1231235999 && test -f $$.touch; then
+  shar_touch=touch
+else
+  shar_touch=:
+  echo
+  echo 'WARNING: not restoring timestamps.  Consider getting and'
+  echo "installing GNU \`touch', distributed in GNU File Utilities..."
+  echo
+fi
+rm -f 1231235999 $$.touch
+#
+# ============= check.c ==============
+if test -f 'check.c' && test X"$1" != X"-c"; then
+  echo 'x - skipping check.c (file already exists)'
+else
+  echo 'x - extracting check.c (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'check.c' &&
+/*
+X
+X    File:    check.c
+X    Author:  Graham Toal
+X    Purpose: Check a word using DAWG or TRIE.
+X    Functions exported:  dawg_check, dawg_checkeq, dawg_case, dawg_caseeq
+X
+X    Description:
+X
+X    Call as:     dawg_check(dawg, "word");
+X    The case-insensitive versions are more expensive so the calling program is
+X    adviced to call the literal-match version first and the case-insensitive
+X    one only if that fails.
+X
+*/
+X
+#include "../splib.h"
+#include <ctype.h> /* for isalpha, tolower */
+X
+/* Simple of check of word in dawg - must be exact match */
+int
+dawg_check(NODE *dict, char *word)
+{
+X  NODE *edge = dict+ROOT_NODE;
+X
+X  if (edge == dict) return(0!=0);
+X  for (;;) {
+X    if (*word == (((*edge >> V_LETTER) & M_LETTER))) {
+X      if (*++word == '\0') {
+X        return((*edge & M_END_OF_WORD) != 0);
+X      } else {
+X        if ((edge = dict+(*edge & M_NODE_POINTER)) == dict) break;
+X        continue;
+X      }
+X    }
+X    if (((*edge++) & M_END_OF_NODE) != 0) break;
+X  }
+X  return(0!=0);
+}
+X
+/* Check of word in dawg allowing case to differ */
+/*#define MATCHES(a,b) (((a) == (b)) || (isalpha(a) && isalpha(b) && (tolower(a) == tolower(b))))*/
+#define MATCHES(a,b) (mylower(a)==mylower(b))
+X
+static int mylower(int a)
+{
+X  if (('A' <= a) && (a <= 'Z')) return(a - 'A' + 'a');
+X  return(a);
+}
+X
+/* Don't care what dict version was, just that it exists */
+static int
+casecheck(NODE *dawg, INDEX i, char *word, int len)
+{
+int endsword, last, ch, target;
+NODE node;
+INDEX link;
+X
+X  for (;;) {
+X    node = dawg[i++];
+X    ch = (int)((node >> V_LETTER) & M_LETTER);
+X    last = ((node & (INDEX)M_END_OF_NODE) != 0);
+X    endsword = ((node & M_END_OF_WORD) != 0);
+X    link = node & M_NODE_POINTER;
+X
+X    target = ((int)*word)&255;
+X    if (ch != 0) {
+X    if (MATCHES(ch, target)) {
+X      if (endsword && *(word+1) == '\0') {
+X        return(0==0);
+X      }
+X      if (*(word+1) != '\0' && link != 0) {
+X        if (casecheck(dawg, link, word+1, len+1)) return(0==0);
+X      }
+X    }
+X    }
+X    if (last) return(0!=0);
+X  }
+X  return(0!=0);
+}
+X
+int
+dawg_casecheck(NODE *dawg, char *word)
+{
+X  return(casecheck(dawg, (INDEX)ROOT_NODE, word, 0));
+}
+X
+/* Simple check, but accepts dicts with "left=right" in them.
+X   Returns true if "left" is found. */
+int
+dawg_checkeq(NODE *dict, char *word)
+{
+X  int ch;
+X  NODE *edge = dict+ROOT_NODE;
+X
+X  if (edge == dict) return(0!=0);
+X  for (;;) {
+X    ch = (int)(((*edge >> V_LETTER) & M_LETTER));
+X    if (ch == '=') {
+X      if (*word == '\0') return(0==0);
+X    }
+X    if (ch == *word) {
+X      word += 1;
+X      if ((edge = dict+(*edge & M_NODE_POINTER)) == dict) break; /* End of dict */
+X      continue; /* edge moved down a level */
+X    }
+X    if (((*edge++) & M_END_OF_NODE) != 0) break; /* End of options */
+X  }
+X  return(0!=0);
+}
+X
+/* As dawg_checkeq, but allows case to differ. */
+/* Don't care what dict version was, just that it exists */
+static int
+casecheckeq(NODE *dawg, INDEX i, char *word, int len)
+{
+int endsword, last, ch, target;
+NODE edge;
+INDEX link;
+X
+X  for (;;) {
+X    edge = dawg[i++];
+X    ch = (int)((edge >> V_LETTER) & M_LETTER);
+X    last = ((edge & (INDEX)M_END_OF_NODE) != 0);
+X    endsword = ((edge & M_END_OF_WORD) != 0);
+X    link = edge & M_NODE_POINTER;
+X
+X    target = ((int)*word)&255;
+X
+X    if (ch == '=') {
+X      if (*word == '\0') return(0==0);
+X    }
+X    if (ch != 0) {
+X    if (MATCHES(ch, target)) {
+X      if (*word == '\0') return(0!=0);
+X      if (link != 0) {
+X        if (casecheckeq(dawg, link, word+1, len+1)) return(0==0);
+X      }
+X    }
+X    }
+X    if (last) return(0!=0);
+X  }
+X  return(0!=0);
+}
+X
+int
+dawg_casecheckeq(NODE *dict, char *word)
+{
+X  return(casecheckeq(dict, (INDEX)ROOT_NODE, word, 0));
+}
+SHAR_EOF
+  $shar_touch -am 1024123192 'check.c' &&
+  chmod 0644 'check.c' ||
+  echo 'restore of check.c failed'
+  shar_count="`wc -c < 'check.c'`"
+  test 3626 -eq "$shar_count" ||
+    echo "check.c: original size 3626, current size $shar_count"
+fi
+# ============= check.h ==============
+if test -f 'check.h' && test X"$1" != X"-c"; then
+  echo 'x - skipping check.h (file already exists)'
+else
+  echo 'x - extracting check.h (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'check.h' &&
+/* Headers for check.c */
+extern int dawg_check(NODE *dict, char *word);
+extern int dawg_casecheck(NODE *dawg, char *word);
+extern int dawg_checkeq(NODE *dict, char *word);
+extern int dawg_casecheckeq(NODE *dict, char *word);
+/* End of headers for check.c */
+SHAR_EOF
+  $shar_touch -am 1024123192 'check.h' &&
+  chmod 0644 'check.h' ||
+  echo 'restore of check.h failed'
+  shar_count="`wc -c < 'check.h'`"
+  test 259 -eq "$shar_count" ||
+    echo "check.h: original size 259, current size $shar_count"
+fi
+# ============= init.c ==============
+if test -f 'init.c' && test X"$1" != X"-c"; then
+  echo 'x - skipping init.c (file already exists)'
+else
+  echo 'x - extracting init.c (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'init.c' &&
+#define PAGE_SIZE 4096		/* Dbugging why mmap fails some times */
+/*
+X
+X    File:    init.c
+X    Authors: Richard Hooker, Graham Toal
+X    Purpose: Loading of dictionary for spelling checker.
+X    Functions exported:  dawg_init, pack_init
+X    Internal functions:  spell_init
+X
+Description:
+X
+The address of a dictionary (either a PACKed dict or a DAWG) is set up by
+this procedure.  This gives us the option of connecting the dict in read-only
+(or copy-on-write) virtual memory.  On non-VM machines, we simply allocate a
+large buffer into which the relevant part of the dictionary is loaded.
+X
+The magic number is used to check the dict type, *and* the machine byte-sex.
+If the sex is reversed, even a VM system has to load the data into writable
+memory (so that it can reverse it).
+X
+The dictionary format is currently:
+X
+X           [magic number]
+X           [no. of edges]
+Dawg --->  [     0      ]
+X           [... edges to end of dict ...]
+X
+The base address of the dawg once loaded into memory is that of the [0].
+If at some future date we extend the dawg format, the new files will
+not have a [0] word at that position in the file.
+X
+*/
+X
+X
+#include "../splib.h"
+#include "pathnames.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+X
+#ifdef MEMDEBUG
+#include "../../mnemosyne/mnemosyn.h"
+#endif
+X
+int     init_debug = (0 != 0);
+X
+/*######################### INTERNAL FUNCTIONS #########################*/
+X
+X
+static long
+sex_change(long number)
+{				/* Most inefficient and cumbersome (but safe)
+X				 * version) */
+X	long    b0, b1, b2, b3;
+X	b0 = number & 255L;
+X	number >>= 8L;
+X	b1 = number & 255L;
+X	number >>= 8L;
+X	b2 = number & 255L;
+X	number >>= 8L;
+X	b3 = number & 255L;
+X	number = b0;
+X	number <<= 8L;
+X	number = number | b1;
+X	number <<= 8L;
+X	number = number | b2;
+X	number <<= 8L;
+X	number = number | b3;
+X	return (number);
+}
+X
+X
+/*####################### EXPORTED FUNCTIONS #########################*/
+X
+/* There's a problem with this interface -- no means of *unload*ing
+X   the dict when you're done with it!  I'd return the file handle,
+X   but I'm using fopen() to read the file in the case of accidental
+X   sex-reversal */
+X
+int
+dawg_init(char *filename, NODE ** dictp, INDEX * nedgesp)
+{
+/* Two VAR parameters */
+#define dict (*dictp)
+#define nedges (*nedgesp)
+X	int     fd;
+X	INDEX   count;
+X	int     dict_handle;
+X	int     rc;
+X	long    dawg_magic;
+X	int     reversing = FALSE;
+X	struct stat statBuf;
+X	char   *full_name = NULL;
+X	NODE   *dawg = NULL;
+X	INDEX   i;
+X
+X	/* init_dict("") gets default */
+X	if (*filename == '\0')
+X		filename = DEFAULT_DAWG;
+X
+X	/* Note: full_name is mallocked by this. Remember to free it when
+X	 * done. */
+X	dict_handle = pathopen("DICTPATH", _SPELL_PATH, filename, "dwg", &full_name);
+X	if (dict_handle == -1) {
+X		fprintf(stderr, "Can\'t open word list \"%s\"\n", filename);
+X		return (FALSE);
+X	}
+X	read(dict_handle, (char *) &dawg_magic, sizeof(dawg_magic));	/* And check result! */
+X	read(dict_handle, (char *) &nedges, sizeof(nedges));	/* And check result! */
+X
+X	if (init_debug)
+X		fprintf(stderr, "dawg contains %8lx edges\n", nedges);
+X
+X	/* Allocate precisely enough memory for all edges + 0 at root node. */
+X	if ((dict = malloc(((size_t) (nedges + 1)) * sizeof(NODE *))) == 0) {
+X		fprintf(stderr, "Can\'t allocate space (%ld bytes) for dictionary\n",
+X		    (long) (nedges + 1) * sizeof(NODE *));
+X		return (FALSE);
+X	}
+X	count = read(dict_handle, (char *) dict, sizeof(NODE) * (size_t) nedges);	/* Better be 32-bit
+X										 * machine! */
+X	if (count != sizeof(NODE) * nedges) {
+X		fprintf(stderr,
+X		    "Failed to read dictionary %s - wanted %ld bytes, got %ld\n",
+X		    filename, sizeof(NODE) * nedges, count);
+X		return (FALSE);
+X	}
+X
+X	if (dawg_magic == DAWG_MAGIC) {
+X		/* nedges should correspond to statBuf.st_size -- unless we
+X		 * add extra fields as a trailer later */
+X		return (TRUE);
+X	}
+X	if (dict[0] != 0L) {
+X		fprintf(stderr,
+X		    "*** Error: file %s is in a newer dawg format than I know about!\n",
+X		    full_name);
+X		return (FALSE);
+X	}
+X	if (dawg_magic != REVERSE_DAWG_MAGIC) {
+X		fprintf(stderr, "*** Error: file %s is not in dawg format\n", full_name);
+X		return (FALSE);
+X	}
+X	fprintf(stderr,
+X	    "*** Warning: You are using a byte-sex reversed dictionary (%s)\n",
+X	    filename);
+X	fprintf(stderr,
+X	    "             It will be more efficient if you can reverse it.\n");
+X	/* I'm going to unmap & close, though I think what I should have done
+X	 * was map in MAP_PRIVATE mode which gives copy-on-write, and swap in
+X	 * situ. */
+X	/* Can't find munmap at link time! */
+X	/* munmap((caddr_t) dawg, statBuf.st_size); */
+X	close(dict_handle);	/* Reopen and read into ram, sex-changing */
+X	return (TRUE);
+#undef nedges
+#undef dict
+}
+#ifdef TEST
+#define TESTDECL int main(int argc, char **argv)
+TESTDECL
+{
+X	int     web2, words, web2a;
+X	NODE   *web2dawg, *wordsdawg, *web2adawg;
+X	INDEX   web2edges, wordsedges, web2aedges;
+X	web2 = dawg_init("web2", &web2dawg, &web2edges);
+X	words = dawg_init("words", &wordsdawg, &wordsedges);
+X	web2a = dawg_init("web2a", &web2adawg, &web2aedges);
+X	if (web2)
+X		fprintf(stderr, "web loaded.\n");
+X	else
+X		fprintf(stderr, "failed to load web2.\n");
+X	if (words)
+X		fprintf(stderr, "words loaded.\n");
+X	else
+X		fprintf(stderr, "failed to load words.\n");
+X	if (web2a)
+X		fprintf(stderr, "web2a loaded.\n");
+X	else
+X		fprintf(stderr, "failed to load web2a.\n");
+X	if (!(web2 && words && web2a))
+X		exit(EXIT_FAILURE);
+X	if (argc == 1)
+X		exit(EXIT_SUCCESS);
+X	if (dawg_check(wordsdawg, argv[1]))
+X		fprintf(stderr, "%s in words\n", argv[1]);
+X	else
+X		fprintf(stderr, "%s is not in words\n", argv[1]);
+X	if (dawg_check(web2adawg, argv[1]))
+X		fprintf(stderr, "%s in web2a\n", argv[1]);
+X	else
+X		fprintf(stderr, "%s is not in web2a\n", argv[1]);
+X	if (dawg_check(web2dawg, argv[1]))
+X		fprintf(stderr, "%s in web2\n", argv[1]);
+X	else
+X		fprintf(stderr, "%s is not in web2\n", argv[1]);
+X	exit(0);
+}
+#endif
+SHAR_EOF
+  $shar_touch -am 1024123192 'init.c' &&
+  chmod 0644 'init.c' ||
+  echo 'restore of init.c failed'
+  shar_count="`wc -c < 'init.c'`"
+  test 5824 -eq "$shar_count" ||
+    echo "init.c: original size 5824, current size $shar_count"
+fi
+# ============= init.h ==============
+if test -f 'init.h' && test X"$1" != X"-c"; then
+  echo 'x - skipping init.h (file already exists)'
+else
+  echo 'x - extracting init.h (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'init.h' &&
+/* Headers for init.c */
+extern int dawg_init(char *filename, NODE **dictp, INDEX *nedgesp);
+/* End of headers for init.c */
+SHAR_EOF
+  $shar_touch -am 1024123192 'init.h' &&
+  chmod 0644 'init.h' ||
+  echo 'restore of init.h failed'
+  shar_count="`wc -c < 'init.h'`"
+  test 125 -eq "$shar_count" ||
+    echo "init.h: original size 125, current size $shar_count"
+fi
+# ============= pathnames.h ==============
+if test -f 'pathnames.h' && test X"$1" != X"-c"; then
+  echo 'x - skipping pathnames.h (file already exists)'
+else
+  echo 'x - extracting pathnames.h (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'pathnames.h' &&
+/* This is the default value if DICTPATH is not found in the environment. */
+#define _SPELL_PATH "/usr/share/dict:/usr/dict:."
+SHAR_EOF
+  $shar_touch -am 0813145195 'pathnames.h' &&
+  chmod 0644 'pathnames.h' ||
+  echo 'restore of pathnames.h failed'
+  shar_count="`wc -c < 'pathnames.h'`"
+  test 127 -eq "$shar_count" ||
+    echo "pathnames.h: original size 127, current size $shar_count"
+fi
+# ============= pathopen.c ==============
+if test -f 'pathopen.c' && test X"$1" != X"-c"; then
+  echo 'x - skipping pathopen.c (file already exists)'
+else
+  echo 'x - extracting pathopen.c (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'pathopen.c' &&
+/*
+X    A rather quick hack to open a file via a path -- could be made
+X    more general.  Would prefer to use a standard one out of a library
+X    but there doesn't seem to be one...
+X      Seems to cover all the bases -- elements of path may end in '/' if
+X    that's your style; absolute (rooted) filenames do not go via path,
+X    and '.' works OK.  I would prefer not to do the open() in this code
+X    but I suppose I have to worry about efficiency. [I would prefer not
+X    to do the open because I might want to find a file for reading via
+X    FILE * instead, or for some other reason that opening it.]
+X
+X    pathopen(
+X       "PATHNAME",                    Open a dictionary file via PATHNAME
+X       default path,                  what to use if PATHNAME not found
+X       dictionary name,               root dict name (eg "words", or "english" etc)
+X       extension,                     "dwg" for a dawg file at the moment.
+X       &expanded name)                Fills in full name with path and extension.
+X                                   -> int file descriptor or -1 for not found.
+X
+X */
+X
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <fcntl.h>
+X
+#ifdef MEMDEBUG
+#include "../../mnemosyne/mnemosyn.h"
+#endif
+X
+int     pathopen_debug = (0 != 0);
+X
+/* Generic Unix thingummybobs - could put inline but it's easier
+X   for me to test at home on my Archimedes if I make it portable... */
+X
+#define DIRSEP "/"
+#define EXTSEPCH '.'
+#define PATHSEPCH ':'
+#define ROOT "/"
+#define HOME "."		/* To catch non-path names ./fred & ../fred */
+#define HERE "./"
+X
+#ifdef __riscos
+#undef DIRSEP
+#undef EXTSEPCH
+#undef PATHSEPCH
+#undef ROOT
+#undef HERE
+#define DIRSEP "."
+#define EXTSEPCH '-'
+#define PATHSEPCH ','
+#define ROOT "$."
+#define HERE "@."
+#endif
+X
+int     getpath_debug = (0 == 0);	/* May be tweaked by debugger */
+X
+static int
+absolute(char *fname)
+{				/* Don't look in path if absolute filename
+X				 * given */
+X	/* This could easily be a macro, but I've made it a function so that
+X	 * it can more easily be expanded later.  (For instance, on the
+X	 * Archimedes it is quite a hassle to work out whether a filename is
+X	 * absolute...) */
+X	if (strncmp(fname, ROOT, strlen(ROOT)) == 0)
+X		return (0 == 0);
+X	if (strncmp(fname, HOME, strlen(HOME)) == 0)
+X		return (0 == 0);
+X	return (0 != 0);
+}
+X
+int
+pathopen(char *pathname, char *defpath, char *basename, char *ext, char **fullnamep)
+{
+#define NULLEXIT(p) if (p == NULL) exit(EXIT_FAILURE); else	/* OK */
+#define fullname (*fullnamep)
+X
+X	char   *dictp = NULL, *dictpath = NULL;
+X	char   *sep = NULL, *place = NULL;
+X	char   *filename = NULL;
+X	char   *savepath = NULL, *savefile = NULL;
+X	int     f = -1;
+X
+X	dictp = "";
+X	if (absolute(basename) || (dictp = getenv(pathname)) != NULL) {
+X		savepath = dictpath = malloc(strlen(dictp) + 1);
+X		NULLEXIT(dictpath);
+X		strcpy(dictpath, dictp);
+X	} else {
+X		savepath = dictpath = malloc(strlen(defpath) + 1);
+X		NULLEXIT(dictpath);
+X		strcpy(dictpath, defpath);
+X	}
+X
+X	for (;;) {
+X		sep = strchr(dictpath, PATHSEPCH);
+X		if (sep == NULL) {	/* last element of path */
+X			place = dictpath;
+X			dictpath = dictpath + strlen(dictpath);
+X		} else {	/* More to come */
+X			place = dictpath;
+X			*sep = '\0';
+X			dictpath = sep + 1;
+X		}
+X		if (*place == '\0') {	/* "/usr/share/dict:/usr/dict:" --
+X					 * last ":" implies current dir */
+X			savefile = filename = malloc(strlen(basename) + 1);
+X			NULLEXIT(filename);
+X			strcpy(filename, basename);
+X		} else {	/* Use given path.  Allow it to be of the form
+X				 * "/usr/dict/" */
+X			if (strncmp(place + strlen(place) - strlen(DIRSEP), DIRSEP, strlen(DIRSEP)) == 0) {
+X				savefile = filename = malloc(strlen(place) + strlen(basename) + 1);
+X				NULLEXIT(filename);
+X				sprintf(filename, "%s%s", place, basename);
+X			} else {
+X				savefile = filename = malloc(strlen(place) + strlen(DIRSEP) + strlen(basename) + 1);
+X				NULLEXIT(filename);
+X				sprintf(filename, "%s%s%s", place, DIRSEP, basename);
+X			}
+X		}
+X		if (strncmp(filename, HERE, strlen(HERE)) == 0) {	/* For tidyness, strip
+X									 * leading "./" */
+X			filename += strlen(HERE);
+X		}
+X		if (strrchr(filename, EXTSEPCH) == NULL && ext != NULL) {
+X			/* If no extension given, add default */
+X			char   *fileext = malloc(strlen(filename) + 1 + strlen(ext) + 1);
+X			NULLEXIT(fileext);
+X			sprintf(fileext, "%s%c%s", filename, EXTSEPCH, ext);
+X			free(savefile);
+X			savefile = filename = fileext;
+X		}
+X		if (getpath_debug)
+X			if (pathopen_debug)
+X				fprintf(stderr, "Looking for %s\n", filename);
+X		if ((f = open(filename, O_RDONLY)) != -1) {
+X			fullname = filename;	/* Returns a mallocked string */
+X			free(savepath);
+X			return (f);	/* return the fd of the file */
+X		}
+X		if (sep == NULL && *dictpath == '\0')
+X			break;
+X	}
+X
+X	free(savefile);
+X	free(savepath);
+X	fullname = NULL;
+X
+X	return (-1);		/* could not open the file */
+#undef NULLEXIT
+#undef fullname
+}
+#ifdef DBMAIN
+X
+#define DICTPATH "/usr/share/dict:/usr/dict:."
+#ifdef __riscos
+#undef DICTPATH
+#define DICTPATH "$.dicts,"
+#endif
+X
+#define MAINDECL int main(int argc, char **argv)
+MAINDECL			/* Sneakily hide it from 'mkptypes' :-) */
+{
+X	char   *fullname;
+X	int     fd;
+X	if (argc != 2) {
+X		fprintf(stderr, "syntax: pathopen dictname\n");
+X		exit(EXIT_FAILURE);
+X	}
+X	getpath_debug = (0 == 0);
+X	fd = pathopen("DICTPATH", DICTPATH, argv[1], "dwg", &fullname);
+X	fprintf(stderr, "pathopen(\"DICTPATH\", \"%s\", \"%s\", \"dwg\", -> ", DICTPATH, argv[1]);
+X	if (fd != -1) {
+X		fprintf(stderr, "\"%s\") -> %d\n", fullname, fd);
+X		free(fullname);
+X	} else {
+X		fprintf(stderr, "NULL) -> -1\n");
+X	}
+}
+#endif				/* DBMAIN */
+SHAR_EOF
+  $shar_touch -am 1024123192 'pathopen.c' &&
+  chmod 0644 'pathopen.c' ||
+  echo 'restore of pathopen.c failed'
+  shar_count="`wc -c < 'pathopen.c'`"
+  test 5523 -eq "$shar_count" ||
+    echo "pathopen.c: original size 5523, current size $shar_count"
+fi
+# ============= pathopen.h ==============
+if test -f 'pathopen.h' && test X"$1" != X"-c"; then
+  echo 'x - skipping pathopen.h (file already exists)'
+else
+  echo 'x - extracting pathopen.h (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'pathopen.h' &&
+/* Headers for pathopen.c */
+extern int pathopen(char *pathname, char *defpath, char *basename, char *ext, char **fullnamep);
+/* End of headers for pathopen.c */
+SHAR_EOF
+  $shar_touch -am 1024123192 'pathopen.h' &&
+  chmod 0644 'pathopen.h' ||
+  echo 'restore of pathopen.h failed'
+  shar_count="`wc -c < 'pathopen.h'`"
+  test 162 -eq "$shar_count" ||
+    echo "pathopen.h: original size 162, current size $shar_count"
+fi
+# ============= prime.c ==============
+if test -f 'prime.c' && test X"$1" != X"-c"; then
+  echo 'x - skipping prime.c (file already exists)'
+else
+  echo 'x - extracting prime.c (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'prime.c' &&
+#include <stdio.h>
+#include <math.h>
+X
+int isprime(long i) {
+long f, d, squirt;
+X
+X  for (squirt = i; i/squirt < squirt; squirt >>= 1) /* Loop */;
+X  squirt = squirt << 1 + 1;
+X
+X  for (f = 3; f <= squirt; f += 2) {
+X    d = i / f;
+X    if (d*f == i) {
+#ifdef DBMAIN
+X      fprintf(stderr, "%ld = %ld * %ld\n", i, f, d);
+#endif
+X      return(0!=0);
+X    }
+X  }
+X  return(0==0);
+}
+X
+long prime(long i) {
+X  if ((i&1) == 0) i++;
+X  for (;;) {
+X    if (isprime(i)) return(i);
+X    i += 2;
+X  }
+}
+X
+#ifdef DBMAIN
+int main(int argc, char **argv) {
+long i, p;
+X  if (argc == 1) {
+X    fprintf(stderr, "%ld\nStarting number: ",32771L*32771L);
+X    fscanf(stdin, "%ld", &i);
+X  } else {
+X    sscanf(argv[1], "%ld", &i);
+X  }
+X  p = prime(i);
+X  fprintf(stderr, "The next prime up from %ld is %ld\n", i, p);
+}
+#endif
+SHAR_EOF
+  $shar_touch -am 1024123192 'prime.c' &&
+  chmod 0644 'prime.c' ||
+  echo 'restore of prime.c failed'
+  shar_count="`wc -c < 'prime.c'`"
+  test 780 -eq "$shar_count" ||
+    echo "prime.c: original size 780, current size $shar_count"
+fi
+# ============= prime.h ==============
+if test -f 'prime.h' && test X"$1" != X"-c"; then
+  echo 'x - skipping prime.h (file already exists)'
+else
+  echo 'x - extracting prime.h (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'prime.h' &&
+/* Headers for prime.c */
+extern int isprime(long i);
+extern long prime(long i);
+extern int main(int argc, char **argv);
+/* End of headers for prime.c */
+SHAR_EOF
+  $shar_touch -am 1024123192 'prime.h' &&
+  chmod 0644 'prime.h' ||
+  echo 'restore of prime.h failed'
+  shar_count="`wc -c < 'prime.h'`"
+  test 154 -eq "$shar_count" ||
+    echo "prime.h: original size 154, current size $shar_count"
+fi
+# ============= print.c ==============
+if test -f 'print.c' && test X"$1" != X"-c"; then
+  echo 'x - skipping print.c (file already exists)'
+else
+  echo 'x - extracting print.c (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'print.c' &&
+/*
+X
+X    File:    print.c
+X    Author:  Graham Toal
+X    Purpose: Print a packed trie to stderr.
+X    Functions exported:  dawg_print, pack_print, dawg_print_prefix
+X    Internal functions:  pack_pr dawg_pr dawg_pr_prefix
+X
+Description:
+X  Pre-order traverse of packed TRIE or DAWG.  Will be modified
+X  soon to take output file as parameter.  Then sometime after that
+X  to callback with each string at it is generated.  Meanwhile,
+X  people requiring custom versions of dawg-walking stuff might
+X  as well just copy this code and edit it to do what they want.
+X
+X  The special version print_dawg_prefix takes a NODE from somewhere
+X  in a dict as a parameter, and prints out only those words which
+X  contain that node.  You have to locate the node seperately with
+X  'locate_prefix', and pass the prefix string in so it can be printed.
+X
+*/
+X
+#include "../splib.h"
+X
+#include <stdio.h>
+X
+static void
+dawg_pr(NODE *dawg, INDEX node, int len)
+{
+X  static char word[MAX_WORD_LEN];
+X  NODE *edge;
+X
+X  for (edge = (NODE *)&dawg[node]; ; edge++) {
+X  long c;
+X    c = *edge;           /* Don't rewrite this - its avoiding a MSC bug */
+X    c = c >> V_LETTER;
+X    c = c & M_LETTER;
+X    word[len] = (char)c;
+X    if ((*edge & M_END_OF_WORD) != 0) {
+X      word[len+1] = '\0';
+X      fprintf(stdout, "%s\n", word);
+X    }
+X    c = *edge & M_NODE_POINTER;
+X    if ((*edge & M_NODE_POINTER) != 0)
+X      dawg_pr (dawg, c, len + 1);
+X    if ((*edge & M_END_OF_NODE) != 0) break; /* End of node */
+X  }
+}
+X
+void
+dawg_print(NODE *dawg, INDEX node)
+{
+X  dawg_pr(dawg, node, 0);
+}
+X
+X
+X
+X
+int
+fuzz(NODE *dawg, INDEX i, char *word, char *res, int len,
+X     int **Table, int *found)
+{
+/*char result[MAX_WORD_LEN];*/
+int endsword, last, ch, target;
+NODE node;
+INDEX link;
+X
+X  for (;;) {
+X    node = dawg[i++];
+X    ch = (int)((node >> V_LETTER) & M_LETTER);
+X    last = ((node & (INDEX)M_END_OF_NODE) != 0);
+X    endsword = ((node & M_END_OF_WORD) != 0);
+X    link = node & M_NODE_POINTER;
+X
+X    res[len] = ch; res[len+1] = '\0';
+X    target = ((int)*word)&255;
+X    if (ch != 0) {
+X    if ((Table[ch][target] != 0) || target == '?') {
+X      if (endsword && *(word+1) == '\0') {
+X        fprintf(stdout, "word: %s\n", res); (*found)++;
+X      }
+X      if (*(word+1) != '\0' && link != 0)
+X        (void) fuzz(dawg, link, word+1, res, len+1, Table, found);
+X    }
+X    }
+X    if (last) return(0==0);
+X  }
+X  return(0==0);
+}
+X
+int
+fuzzy_print(NODE *dawg, char *word, int **Table)
+{
+static char result[MAX_WORD_LEN];
+int i = 0;
+X  (void)fuzz(dawg, (INDEX)ROOT_NODE, word, result, 0, Table, &i);
+X  return(i);
+}
+X
+X
+X
+X
+X
+static void
+pack_pr(NODE *ptrie, INDEX i, int pos)
+{
+static char s[MAX_WORD_LEN+1];
+int b;
+INDEX p;
+X  for (b = BASE_CHAR; b < BASE_CHAR+MAX_CHARS; b++) {
+X    if (b != 0) {
+X      p = ptrie[i+b-BASE_CHAR];
+X      if (((p>>V_LETTER)&M_LETTER) == b) {
+X      	s[pos] = b; s[pos+1] = '\0';
+X        if ((p & M_END_OF_WORD) != 0) fprintf(stderr, "%s\n", s);
+X        if ((p &= M_NODE_POINTER) != 0) {
+X          pack_pr(ptrie, p, pos+1);
+X        }
+X      }
+X    }
+X  }
+}
+X
+X
+void
+pack_print(NODE *ptrie, INDEX node)
+{
+X  pack_pr(ptrie, node, 0);
+}
+X
+X
+static void
+dawg_pr_prefix(NODE *dawg, char *prefix, INDEX node, int len)
+{
+X  NODE *edge;
+X  static char word[MAX_WORD_LEN];
+X  long c;
+X
+X  for (edge = (NODE *)&dawg[node]; ; edge++) {
+X    /* Don't 'fix' - compiler bugaround for microsoft :-( */
+X    c = *edge; c = c >> V_LETTER; c = c & M_LETTER;
+X    word[len] = (char)c;
+X    if ((*edge & M_END_OF_WORD) != 0) {
+X      word[len+1] = 0;
+X      fprintf(stdout, "%s%s\n", prefix, word);
+X    }
+X    c = *edge & M_NODE_POINTER;
+X    if (c != 0) dawg_pr_prefix(dawg, prefix, c, len + 1);
+X    /* End of node - check repair later - I accidentally nobbled it */
+X    if ((*edge & M_END_OF_NODE) != 0) break;
+X  }
+}
+X
+void
+dawg_print_prefix(NODE *dawg, char *prefix, INDEX node)
+{
+X  dawg_pr_prefix(dawg, prefix, node, 0);
+}
+SHAR_EOF
+  $shar_touch -am 1024123192 'print.c' &&
+  chmod 0644 'print.c' ||
+  echo 'restore of print.c failed'
+  shar_count="`wc -c < 'print.c'`"
+  test 3822 -eq "$shar_count" ||
+    echo "print.c: original size 3822, current size $shar_count"
+fi
+# ============= print.h ==============
+if test -f 'print.h' && test X"$1" != X"-c"; then
+  echo 'x - skipping print.h (file already exists)'
+else
+  echo 'x - extracting print.h (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'print.h' &&
+/* Headers for print.c */
+extern void dawg_print(NODE *dawg, INDEX node);
+extern int fuzz(NODE *dawg, INDEX i, char *word, char *res, int len, int **Table, int *found);
+extern int fuzzy_print(NODE *dawg, char *word, int **Table);
+extern void pack_print(NODE *ptrie, INDEX node);
+extern void dawg_print_prefix(NODE *dawg, char *prefix, INDEX node);
+/* End of headers for print.c */
+SHAR_EOF
+  $shar_touch -am 1024123192 'print.h' &&
+  chmod 0644 'print.h' ||
+  echo 'restore of print.h failed'
+  shar_count="`wc -c < 'print.h'`"
+  test 381 -eq "$shar_count" ||
+    echo "print.h: original size 381, current size $shar_count"
+fi
+# ============= makefile ==============
+if test -f 'makefile' && test X"$1" != X"-c"; then
+  echo 'x - skipping makefile (file already exists)'
+else
+  echo 'x - extracting makefile (text)'
+  sed 's/^X//' << 'SHAR_EOF' > 'makefile' &&
+MEMDEBUG =#  ../../mnemosyne/mnemosyn.o
+# Must tidy up this shar file and the one in the directory above...
+CC = gcc -Wall -Wshadow -Wid-clash-32 -Wpointer-arith -Wcast-qual -Wwrite-strings
+X
+# Makefile for ../libspell.a
+X
+OBJECTS=check.o typo.o init.o print.o prime.o pathopen.o # wordio.o
+X
+all:	../libspell.a init
+X	echo All up to date
+X
+X../libspell.a: $(OBJECTS)
+X	ar rc $@ $?
+X	ranlib $@
+X
+# These get build by implicit rules.
+X
+check.o: check.c
+# wordio.o: wordio.c
+init.o: init.c
+typo.o: typo.c
+print.o: print.c
+prime.o: prime.c
+pathopen.o: pathopen.c
+X
+# EOF
+X
+And the main Makefile is now:
+X
+CFLAGS =
+LIBFLAG =
+X
+LINK = cc
+LFLAGS =
+X
+LIBRARY=	libspell.a
+X
+#all: sextest texcheck dawg pdawg $(LIBRARY) sharfile init
+#	echo All up to date
+X
+init:	init.c pathopen.c
+X	$(CC) -DTEST -oinit init.c pathopen.o $(MEMDEBUG) check.o
+X	$(CC) -c init.c
+X
+texcheck: texcheck.c $(LIBRARY)
+X	$(CC) -o texcheck texcheck.c $(LIBRARY)
+X
+sextest: sextest.c $(LIBRARY)
+X	$(CC) -o sextest sextest.c $(LIBRARY)
+X
+dawg: dawg.c $(LIBRARY)
+X	$(CC) -o dawg dawg.c $(LIBRARY)
+X
+pdawg: pdawg.c $(LIBRARY)
+X	$(CC) -o pdawg pdawg.c $(LIBRARY)
+X
+$(LIBRARY): SpellLib/init.c \
+X	SpellLib/print.c \
+X	SpellLib/prime.c \
+X	SpellLib/check.c
+# SpellLib/wordio.c
+X	(cd SpellLib; make -$(MAKEFLAGS) ../libspell.a)
+X
+sharfile: spelllib.shar
+X	echo Sharfile created
+X
+spelllib.shar:	check.c check.h init.c init.h pathnames.h pathopen.c pathopen.h prime.c prime.h print.c print.h
+X	shar check.c check.h init.c init.h pathnames.h pathopen.c pathopen.h prime.c prime.h print.c print.h makefile > spelllib.shar
+SHAR_EOF
+  $shar_touch -am 1024123292 'makefile' &&
+  chmod 0644 'makefile' ||
+  echo 'restore of makefile failed'
+  shar_count="`wc -c < 'makefile'`"
+  test 1541 -eq "$shar_count" ||
+    echo "makefile: original size 1541, current size $shar_count"
+fi
+exit 0
