@@ -1,6 +1,6 @@
 MEMDEBUG =#  ../../mnemosyne/mnemosyn.o
 # Must tidy up this shar file and the one in the directory above...
-CC = gcc -Wall -Wshadow -Wid-clash-32 -Wpointer-arith -Wcast-qual -Wwrite-strings
+CC = gcc -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wwrite-strings
 
 # Makefile for ../libspell.a
 
