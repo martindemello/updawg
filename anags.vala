@@ -24,9 +24,10 @@ public class Updawg : Hildon.Program {
     var button = new Gtk.Button.with_label ("Anagrams");
     var output = new Gtk.TreeView ();
     var list_model = new ListStore (1, typeof (string));
-    var input  = new Gtk.Entry ();
+    var input  = new Hildon.Entry (Hildon.SizeType.AUTO);
     var scroll = new ScrolledWindow (null, null);
 
+    input.set("hildon-input-mode", Hildon.GtkInputMode.FULL);
     output.set_model(list_model);
     output.insert_column_with_attributes (-1, "Anagrams", new CellRendererText (), "text", 0);
     scroll.set_policy (PolicyType.AUTOMATIC, PolicyType.AUTOMATIC);
