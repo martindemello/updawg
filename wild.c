@@ -33,7 +33,7 @@
 #include "splib.h"
 
 int do_wild(
-  NODE *dawg, INDEX i, char *word, char *res, int len, int *found) {
+  NODE *dawg, INDEX i, char *word, char *res, int len) {
 
   int endsword, last, ch, target;
   NODE node;
@@ -47,7 +47,7 @@ int do_wild(
   if (*word == '*') {
     res[len] = '\0'; 
     (void) do_wild(dawg, origi, word+1 /* skip '*', match nothing */,
-                     res, len, found);
+                     res, len);
   }
 
   for (;;) {
@@ -63,25 +63,25 @@ int do_wild(
       if (ch == target || target == '?') {
         /* single wildcard 1 letter match */
         if (endsword && *(word+1) == '\0') {
-          fprintf(stdout, "word: %s\n", res); (*found)++;
+          fprintf(stdout, "%s\n", res);
         } else if ((endsword && *(word+1) == '*') && (*(word+2) == '\0')) {
           /* special-case hack for trailing * */
-          fprintf(stdout, "word: %s\n", res); (*found)++;
+          fprintf(stdout, "%s\n", res);
         }
         if (*(word+1) != '\0' && link != 0)
-          (void) do_wild(dawg, link, word+1, res, len+1, found);
+          (void) do_wild(dawg, link, word+1, res, len+1);
       } else if (target == '*') {
         /* multiple wildcard - 0-N letters match */
         if (endsword && *(word+1) == '\0') {
           /* trailing* */
-          fprintf(stdout, "word: %s\n", res); (*found)++;
+          fprintf(stdout, "%s\n", res);
         }
         if (link != 0) { /* link == 0 means this letter terminates here */
           /* skip the * and see what we get if it has matched to here: */
-          (void) do_wild(dawg, link, word+1 /* skip '*' */, res, len+1, found);
+          (void) do_wild(dawg, link, word+1 /* skip '*' */, res, len+1);
           /* let this letter match the * and see
              if the rest of the pattern matches: */
-          (void) do_wild(dawg, link, word /* keep '*' */, res, len+1, found);
+          (void) do_wild(dawg, link, word /* keep '*' */, res, len+1);
 	}
       }
     }
@@ -93,10 +93,9 @@ int do_wild(
 
 int wildcard(NODE *dawg, char *word) {
   char result[MAX_WORD_LEN];
-  int i = 0;
 
-  (void)do_wild(dawg, (INDEX)ROOT_NODE, word, result, 0, &i);
-  return(i);
+  (void)do_wild(dawg, (INDEX)ROOT_NODE, word, result, 0);
+  return(1);
 }
 
 int main(int argc, char **argv) {
@@ -110,7 +109,6 @@ int main(int argc, char **argv) {
   }
   if (!dawg_init("csw.dwg", &dawg, &edges)) exit(2);
   for (each = 1; each < argc; each++) {
-    fprintf(stderr, "* Matches:\n");
     if (!wildcard(dawg, argv[each])) {
       fprintf(stderr, "(none found)\n");
     }
