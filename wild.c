@@ -30,10 +30,14 @@
 */
 
 #include <stdio.h>
+#include <unistd.h>
+#include <gee.h>
+#include <string.h>
+
 #include "splib.h"
 
-int do_wild(
-  NODE *dawg, INDEX i, char *word, char *res, int len) {
+void do_wild(
+  NODE *dawg, INDEX i, char *word, char *res, char *blanks, int len, GeeMap* retwords) {
 
   int endsword, last, ch, target;
   NODE node;
@@ -47,7 +51,7 @@ int do_wild(
   if (*word == '*') {
     res[len] = '\0'; 
     (void) do_wild(dawg, origi, word+1 /* skip '*', match nothing */,
-                     res, len);
+                     res, blanks, len, retwords);
   }
 
   for (;;) {
@@ -63,41 +67,43 @@ int do_wild(
       if (ch == target || target == '?') {
         /* single wildcard 1 letter match */
         if (endsword && *(word+1) == '\0') {
-          fprintf(stdout, "%s\n", res);
+          gee_map_set(GEE_MAP (retwords), g_strndup(res, len+1), g_memdup(blanks, len+1));
         } else if ((endsword && *(word+1) == '*') && (*(word+2) == '\0')) {
           /* special-case hack for trailing * */
-          fprintf(stdout, "%s\n", res);
+          gee_map_set(GEE_MAP (retwords), g_strndup(res, len+1), g_memdup(blanks, len+1));
         }
         if (*(word+1) != '\0' && link != 0)
-          (void) do_wild(dawg, link, word+1, res, len+1);
+          (void) do_wild(dawg, link, word+1, res, blanks, len+1, retwords);
       } else if (target == '*') {
         /* multiple wildcard - 0-N letters match */
         if (endsword && *(word+1) == '\0') {
           /* trailing* */
-          fprintf(stdout, "%s\n", res);
+          gee_map_set(GEE_MAP (retwords), g_strndup(res, len+1), g_memdup(blanks, len+1));
         }
         if (link != 0) { /* link == 0 means this letter terminates here */
           /* skip the * and see what we get if it has matched to here: */
-          (void) do_wild(dawg, link, word+1 /* skip '*' */, res, len+1);
+          (void) do_wild(dawg, link, word+1 /* skip '*' */, res, blanks, len+1, retwords);
           /* let this letter match the * and see
              if the rest of the pattern matches: */
-          (void) do_wild(dawg, link, word /* keep '*' */, res, len+1);
-	}
+          (void) do_wild(dawg, link, word /* keep '*' */, res, blanks, len+1, retwords);
+        }
       }
     }
     if (last) break;
   }
 
-  return(0==0);
+  return;
 }
 
-int wildcard(NODE *dawg, char *word) {
+void dawg_wildcard(NODE *dawg, char *word, GeeMap* retwords) {
   char result[MAX_WORD_LEN];
+  char blanks[MAX_WORD_LEN];
 
-  (void)do_wild(dawg, (INDEX)ROOT_NODE, word, result, 0);
-  return(1);
+  (void)do_wild(dawg, (INDEX)ROOT_NODE, word, result, blanks, 0, retwords);
+  return;
 }
 
+#if 0
 int main(int argc, char **argv) {
   NODE *dawg;
   INDEX edges;
@@ -117,3 +123,4 @@ int main(int argc, char **argv) {
 
   exit(0);
 }
+#endif

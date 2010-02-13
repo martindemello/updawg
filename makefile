@@ -11,10 +11,12 @@ clean:
 libspell.a :
 	cd SpellLib; make ../libspell.a
 
-libdawg.a : dawg_words.o libspell.a
+libdawg.a : dawg_words.o wild.o libspell.a
 	cp libspell.a libdawg.a
-	ar rs libdawg.a dawg_words.o
+	ar rs libdawg.a dawg_words.o wild.o
 
 anags : anags.vala libdawg.a
 	valac -o anags $(VALAFLAGS) $(VALACFLAGS) anags.vala
 
+wild: wild.vala libdawg.a
+	valac -o wild $(VALAFLAGS) $(VALACFLAGS) wild.vala
