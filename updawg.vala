@@ -44,23 +44,25 @@ public class Updawg : Hildon.Program {
 
 
     button.clicked.connect (() => {
-        if (input.text != null && input.text.len() > 0) {
-          Gee.ArrayList<string> words = new Gee.ArrayList<string> ();
-          Gee.ArrayList<string> blanks = new Gee.ArrayList<string> ();
-          Dawg.anagrams(dawg, input.text, 1, words, blanks);
-          label.set_text("%d words found".printf(words.size));
-          TreeIter iter;
-          list_model.clear();
-          for (int i = 0; i < words.size; i++) {
-            list_model.append(out iter);
-            list_model.set(iter, 0, format(words[i], blanks[i]));
+        var pattern = input.text;
+        if (pattern != null && pattern.len() > 0) {
+          var nwords = 0;
+          switch(op.get_current_text()) {
+            case "Anagram":
+              nwords = generate_anagram(pattern, list_model, 1); break;
+            case "Pattern":
+              nwords = generate_pattern(pattern, list_model); break;
+            case "Build":
+              nwords = generate_anagram(pattern, list_model, 0);
           }
+          label.set_text("%d words found".printf(nwords));
         }
-      });
+    });
 
     input.activate.connect(() => {
         label.set_text("enter pressed");
-        button.clicked(); });
+        button.clicked();
+    });
 
     var vbox = new Gtk.VBox (false, 2);
     var hbox = new Gtk.HBox (false, 2);
@@ -75,6 +77,32 @@ public class Updawg : Hildon.Program {
     window.add (vbox);
     input.grab_focus();
   }
+
+  public int generate_anagram(string pattern, ListStore list_model, int full_rack) {
+    Gee.ArrayList<string> words = new Gee.ArrayList<string> ();
+    Gee.ArrayList<string> blanks = new Gee.ArrayList<string> ();
+    Dawg.anagrams(dawg, pattern, full_rack, words, blanks);
+    TreeIter iter;
+    list_model.clear();
+    for (int i = 0; i < words.size; i++) {
+      list_model.append(out iter);
+      list_model.set(iter, 0, format(words[i], blanks[i]));
+    }
+    return words.size;
+  }
+
+  public int generate_pattern(string pattern, ListStore list_model) {
+    Gee.Map ret = new Gee.TreeMap<string, string> ();
+    Dawg.wildcard(dawg, pattern, ret);
+    TreeIter iter;
+    list_model.clear();
+    foreach (string s in (Set<string>)ret.keys) {
+      list_model.append(out iter);
+      list_model.set(iter, 0, format(s, (string)ret[s]));
+    }
+    return ret.size;
+  }
+
 
   public void run () {
     window.show_all ();
