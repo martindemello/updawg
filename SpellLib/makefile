@@ -4,7 +4,7 @@ CC = gcc -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wwrite-strings
 
 # Makefile for ../libspell.a
 
-OBJECTS=check.o typo.o init.o print.o prime.o pathopen.o # cryptomatch.o wordio.o
+OBJECTS=check.o init.o print.o prime.o pathopen.o # cryptomatch.o wordio.o
 
 all:	../libspell.a init
 	echo All up to date
@@ -18,7 +18,6 @@ all:	../libspell.a init
 check.o: check.c
 # wordio.o: wordio.c
 init.o: init.c
-typo.o: typo.c
 print.o: print.c
 prime.o: prime.c
 pathopen.o: pathopen.c

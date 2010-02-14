@@ -10,4 +10,3 @@
 #include "SpellLib/prime.h"
 #include "SpellLib/check.h"
 #include "SpellLib/pathopen.h"
-#include "SpellLib/typo.h"
