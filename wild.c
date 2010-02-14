@@ -49,7 +49,7 @@ void do_wild(
   target = ((int)*word)&255; /* care taken for signed ISO alphabets */
 
   if (*word == '*') {
-    res[len] = '\0'; 
+    res[len] = '\0';
     (void) do_wild(dawg, origi, word+1 /* skip '*', match nothing */,
                      res, blanks, len, retwords);
   }
@@ -62,6 +62,8 @@ void do_wild(
     link = node & M_NODE_POINTER;
 
     res[len] = ch; res[len+1] = '\0';
+    blanks[len] = (target == '?' || target == '*') ? 1 : 2;
+    blanks[len+1] = '\0';
 
     if (ch != 0) {
       if (ch == target || target == '?') {
