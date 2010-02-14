@@ -20,18 +20,28 @@ public class Updawg : Hildon.Program {
 
     Environment.set_application_name ("UpDawg");
 
-    var label  = new Gtk.Label ("UpDawg");
-    var button = new Gtk.Button.with_label ("Anagrams");
+    var label  = new Gtk.Label ("");
+    var button = new Gtk.Button.with_label ("Search");
     var output = new Gtk.TreeView ();
     var list_model = new ListStore (1, typeof (string));
     var input  = new Hildon.Entry (Hildon.SizeType.AUTO);
     var scroll = new Hildon.PannableArea ();
+    var op = new Hildon.TouchSelector.text ();
+    var pick = new Hildon.PickerButton (Hildon.SizeType.AUTO, //_WIDTH | Hildon.SizeType.FINGER_HEIGHT,
+        Hildon.ButtonArrangement.HORIZONTAL);
+
+    op.append_text("Anagram");
+    op.append_text("Pattern");
+    op.append_text("Build");
+    pick.set_selector(op);
+    pick.set_active(0);
 
     input.set("hildon-input-mode", Hildon.GtkInputMode.FULL);
     output.set_model(list_model);
     output.insert_column_with_attributes (-1, "Anagrams", new CellRendererText (), "text", 0);
     scroll.mov_mode = Hildon.MovementMode.VERT;
     scroll.add_with_viewport (output);
+
 
     button.clicked.connect (() => {
         if (input.text != null && input.text.len() > 0) {
@@ -53,11 +63,14 @@ public class Updawg : Hildon.Program {
         button.clicked(); });
 
     var vbox = new Gtk.VBox (false, 2);
+    var hbox = new Gtk.HBox (false, 2);
+    hbox.pack_start (input, true, true, 2);
+    hbox.pack_start (pick, false, true, 2);
+    hbox.pack_start (button, false, true, 2);
 
     vbox.pack_start (label, false, true, 2);
     vbox.pack_start (scroll, true, true, 2);
-    vbox.pack_start (input, false, true, 2);
-    vbox.pack_start (button, false, true, 2);
+    vbox.pack_start (hbox, false, true, 2);
 
     window.add (vbox);
     input.grab_focus();
