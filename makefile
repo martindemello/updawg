@@ -21,7 +21,7 @@ updawg : updawg.vala libdawg.a
 	valac -o updawg $(VALAGUIFLAGS) $(VALACFLAGS) updawg.vala dawgsearch.vala
 
 cli : updawg-cli.vala libdawg.a
-	valac -o updawg-cli $(VALACLIFLAGS) --Xcc="-I/usr/include/readline" $(VALACFLAGS) --Xcc="-lreadline" updawg-cli.vala dawgsearch.vala
+	valac -o updawg-cli $(VALACLIFLAGS) $(VALACFLAGS) --Xcc="-lreadline" updawg-cli.vala dawgsearch.vala
 
 wild: wild.vala libdawg.a
 	valac -o wild $(VALAFLAGS) $(VALACFLAGS) wild.vala

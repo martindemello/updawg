@@ -13,11 +13,11 @@ public class UpdawgCli: Object {
     if (pattern != null && pattern.len() > 0) {
       var nwords = 0;
       switch(op) {
-        case "Anagram":
+        case "a":
           nwords = generate_anagram(pattern, 1); break;
-        case "Pattern":
+        case "p":
           nwords = generate_pattern(pattern); break;
-        case "Build":
+        case "b":
           nwords = generate_anagram(pattern, 0); break;
       }
       stdout.printf("%d words found\n", nwords);
@@ -41,9 +41,6 @@ public class UpdawgCli: Object {
     return ret.size;
   }
 
-  public void run () {
-  }
-
   public static string format(string word, string blanks) {
     var l = word.len();
     var s = new StringBuilder();
@@ -61,14 +58,43 @@ public class UpdawgCli: Object {
     return s.str;
   }
 
-  public static void main(string[] args) {
-    UpdawgCli up = new UpdawgCli();
+  public string get_prompt(string op) {
+    switch (op) {
+      case "a": return "anagram> ";
+      case "p": return "pattern> ";
+      case "b": return "build> ";
+    }
+    return "error> ";
+  }
+    
+  public void run() {
+    var op = "a";
+    var prompt = get_prompt(op);
+    string x;
     while (true) {
-      var rack = Readline.readline ("anag> ");
-      if (rack != null && rack!= "") {
-        up.generate("Anagram", rack);
+      var rack = Readline.readline (prompt);
+      if (rack in "Qq") { break; }
+      if (rack != null && rack.len() > 0) {
+        if (rack.substring(1,1) == " ") {
+          x = rack.substring(0, 1);
+          if (x in "abp") {
+            op = x;
+            prompt = get_prompt(op);
+          }
+          rack = rack.substring(2);
+        }
+
+        if (rack != null && rack.len() > 0) {
+          generate(op, rack);
+        }
+
         Readline.History.add (rack);
       }
     }
+  }
+
+  public static void main(string[] args) {
+    UpdawgCli up = new UpdawgCli();
+    up.run();
   }
 }
