@@ -110,7 +110,9 @@ added_letter:
           if (bingoLength <= used_chars) {                   /* if it's long enough   */
             gee_collection_add(GEE_COLLECTION (retwords), g_strndup(word, i+1));
             gee_collection_add(GEE_COLLECTION (retblanks), g_memdup(blanks, i+1));
-            goto unadd;
+            if (!wilds[i]) {
+              goto unadd;
+            }
           }
           if (!bingosOnly) {                        /* if we don't care       */
             gee_collection_add(GEE_COLLECTION (retwords), g_strndup(word, i+1));
