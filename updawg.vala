@@ -2,16 +2,14 @@ using Gtk;
 using Hildon;
 using Dawg;
 using Gee;
+using DawgSearch;
 
 public class Updawg : Hildon.Program {
   private Hildon.Window window;
-  private long *dawg;
+  private DawgSearch dawg { private set; get; }
 
   construct {
-    long nedges;
-    // initialize the dawg
-    // c code: dawg_init(argv[1], &dawg, &nedges)
-    Dawg.init("csw.dwg", out dawg, out nedges);
+    dawg = new DawgSearch("csw.dwg");
 
     window = new Hildon.Window ();
     window.destroy.connect (Gtk.main_quit);
@@ -79,9 +77,8 @@ public class Updawg : Hildon.Program {
   }
 
   public int generate_anagram(string pattern, ListStore list_model, int full_rack) {
-    Gee.ArrayList<string> words = new Gee.ArrayList<string> ();
-    Gee.ArrayList<string> blanks = new Gee.ArrayList<string> ();
-    Dawg.anagrams(dawg, pattern, full_rack, words, blanks);
+    Gee.ArrayList<string> words, blanks;
+    dawg.anagram(pattern, full_rack, out words, out blanks);
     TreeIter iter;
     list_model.clear();
     for (int i = 0; i < words.size; i++) {
@@ -92,8 +89,7 @@ public class Updawg : Hildon.Program {
   }
 
   public int generate_pattern(string pattern, ListStore list_model) {
-    Gee.Map ret = new Gee.TreeMap<string, string> ();
-    Dawg.wildcard(dawg, pattern, ret);
+    Gee.Map ret = dawg.pattern(pattern);
     TreeIter iter;
     list_model.clear();
     foreach (string s in (Set<string>)ret.keys) {
@@ -102,7 +98,6 @@ public class Updawg : Hildon.Program {
     }
     return ret.size;
   }
-
 
   public void run () {
     window.show_all ();
