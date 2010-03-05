@@ -1,0 +1,20 @@
+UpDawg: A wordlist generator for maemo-based devices.
+
+Author: Martin DeMello <martindemello@gmail.com>
+
+Requirements: vala, libgee, hildon
+
+License: MIT (see MIT-LICENSE)
+
+Compiling:
+* `make` to build the hildon interface
+* `make-cli` to build the readline interface
+
+Usage:
+* GUI: 
+  Enter the pattern, and select the search type (Anagram|Pattern|Build)
+  Use "?" for a single wildcard and "*" for 0 or more wildcards
+* CLI: 
+  a <pattern> # anagram
+  b <pattern> # build
+  p <pattern> # pattern
