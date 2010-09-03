@@ -34,8 +34,8 @@ public class UpdawgCli: Object {
   }
 
   public int generate_pattern(string pattern) {
-    Gee.Map ret = dawg.pattern(pattern);
-    foreach (Gee.Map.Entry s in ret.entries) {
+    Gee.Map<string, string> ret = dawg.pattern(pattern);
+    foreach (Gee.Map.Entry<string, string> s in ret.entries) {
       stdout.printf("%s\n", format((string) s.key, (string) s.value));
     }
     return ret.size;

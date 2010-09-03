@@ -20,8 +20,8 @@ class DawgSearch: Object {
     Dawg.anagrams(dawg, rack, full_rack, words, blanks);
   }
 
-  public Gee.Map pattern(string rack) {
-    Gee.Map ret = new Gee.TreeMap<string, string> ();
+  public Gee.Map<string, string> pattern(string rack) {
+    Gee.Map<string, string> ret = new Gee.TreeMap<string, string> ();
     Dawg.wildcard(dawg, rack, ret);
     return ret;
   }
