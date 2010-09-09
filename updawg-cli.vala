@@ -6,7 +6,7 @@ public class UpdawgCli: Object {
   private DawgSearch dawg { private set; get; }
 
   construct {
-    dawg = new DawgSearch("csw.dwg");
+    dawg = new DawgSearch("/usr/share/updawg/csw.dwg");
   }
 
   public void generate(string op, string pattern) {

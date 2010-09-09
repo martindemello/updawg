@@ -9,7 +9,7 @@ public class Updawg : Hildon.Program {
   private DawgSearch dawg { private set; get; }
 
   construct {
-    dawg = new DawgSearch("csw.dwg");
+    dawg = new DawgSearch("/usr/share/updawg/csw.dwg");
 
     window = new Hildon.Window ();
     window.destroy.connect (Gtk.main_quit);
