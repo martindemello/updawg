@@ -89,7 +89,7 @@ public class Updawg : Hildon.Program {
   }
 
   public int generate_pattern(string pattern, ListStore list_model) {
-    Gee.Map ret = dawg.pattern(pattern);
+    Gee.Map<string, string> ret = dawg.pattern(pattern);
     TreeIter iter;
     list_model.clear();
     foreach (string s in (Set<string>)ret.keys) {
