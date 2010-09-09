@@ -25,3 +25,14 @@ cli : updawg-cli.vala libdawg.a
 
 wild: wild.vala libdawg.a
 	valac -o wild $(VALAFLAGS) $(VALACFLAGS) wild.vala
+
+install: updawg updawg-cli updawg.png csw.dwg
+	install -d ${DESTDIR}/usr/bin
+	install updawg ${DESTDIR}/usr/bin
+	install updawg-cli ${DESTDIR}/usr/bin
+	install -d ${DESTDIR}/usr/share/applications/hildon
+	install updawg.desktop ${DESTDIR}/usr/share/applications/hildon
+	install -d ${DESTDIR}/usr/share/pixmaps
+	install updawg.png ${DESTDIR}/usr/share/pixmaps
+	install -d ${DESTDIR}/usr/share/updawg
+	install csw.dwg ${DESTDIR}/usr/share/updawg

@@ -1,0 +1,7 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=0.40
+Type=Application
+Name=UpDawg
+Exec=/usr/bin/updawg
+Icon=updawg

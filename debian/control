@@ -1,0 +1,48 @@
+Source: updawg
+Section: user/games
+Priority: extra
+Maintainer: Martin DeMello <martindemello@gmail.com>
+Build-Depends: debhelper (>= 4), libhildon1-dev, libgee-dev
+Standards-Version: 4
+
+Package: updawg
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Anagram and pattern generator and word judge
+XB-Maemo-Icon-26:
+ iVBORw0KGgoAAAANSUhEUgAAABoAAAAaCAIAAAAmKNuZAAAAAXNSR0IArs4c
+ 6QAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9oJCRUZEJMzYPUAAAXH
+ SURBVEjHBcFLi11ZFQDgtfZe+3HOuefeWym6+mVsTCTgoxsHNupAcCAOHOrA
+ iT/AmTP/gOIfcO7cHok4EEFCB1QQBA3YYmPbSSBJVbqq7uucs99r+X34h9/8
+ fH7xN+0GULQmnJesV5ux062UaQ6k9dnF2zkt8+noV6uwROc6liosOUetOwCA
+ kpRzSpMa3qGy+1iYyQ6jw0PIiNhjngJJY7SuW10Q9cfjcXt+V0SYj8wEYFCJ
+ cx6VAsgVOwEUxuX6I5VK7dwWAKYp58MrcK7ZAURi3nMu63EEgJYnEWZuzLrv
+ DAAgqtqSCIgwABAZVFprIgAA70HEOBdrh6DCEkSY2Q7btQjsDwdRwxICQPTO
+ LqEgQk4HpQwA73e343iW0sStMjcleXF+47tNEXHY+74bhn61GpzrNHXLctrv
+ XmgS7yAswRAZQhGptRjbi7BzHkAZ6ny3NcYrIs1crbEAAMYgwgd/fPyzX324
+ 2wetDAB43wnX0ylttq//4tcPf/LL33/y5LIfzmvN3GrXny3LLpcl58lhUk2M
+ cDPG1hT6cdv51cvr9NluiqkZQ9O81+TJblsLMaY08W5abudTDPvW0ul0G+NJ
+ a8+NSNupEHErCBziAkp7N2itnCKvrLV6XgIzWovClVkQMzMwgwZH5GJatNZK
+ ee81t7zb3ThHqhvXijpn7TBsxnHddT0qMIQplXE1xmXfd5tp2vX9JsZFKRCB
+ goU515IBcJlvptOehcZxJWwUESFiLksp5Xg8LMssAten/Owq7/ZXvh+XGEhj
+ 4+b9VkAUggAAqJTaevNaSiJiajkxt5Z2qjUGgP3uuh82IcZcphAiItx7qxOu
+ zo0IqHSnNcSwVwpZxIOLcbEWmeXi9TdqPZJZAyAAKES0VhtjQVrf9Tmm8/P1
+ uqPHz3ciWri9urr0Ti/zUSk62zhj8Nnlru9XSpFIW+YbpaiWSWnd0CuR1lqx
+ pnOuLyWHuCDCzSlvrQFpAm2zHRurYTjX2s5zLhXWDmvNrdnd7RUiKaVTEtJO
+ 8l6JYAxRkeNWicgYAwKIqLX2fR+Wo7W9iMzzDSBYrxUAexMjGyPO2WF1ZuxA
+ JK0VAFSG7DwfnDUCcDheMSMZsFaYAQCVIkRBVErp4+GaK+cKplVjwHkfArda
+ DOkYi7E9EanGFRFzabW1Vvls+5ohSQk+m5dl2mtNIpjiMafU9cNxbtZAqzJN
+ ueTFOTVNNyyidUVEsL3KuTnnO+9LXnJOjfnB59+62LjfPfzv5e3J+THFQykZ
+ kB/+9dMnV4ez0b334AIBd0f+x78/22zfFGFE9M61pvUPv/fuenNuyEzzrdYG
+ lR29+uT54fo4//nxpVWNNL28Ch98+Omjx89TbT/49hfe+9K9aT799tGTq/3y
+ ja/eLYVjrNa5Unf6x9+/b7qtc3a/n7p+6Lu+lPj+lz/nCT5+tv/Lv17+6e9P
+ H/3zxfV+uTjrf/qjb33twTmiBsnrwX30v1fv3tsoVQCqQsjxRE2vhr6f55M1
+ orVlllpTP5x995v3vvP+F1+8OhTmjpBILu54FmRWYd4x86ubWWtUipWyWot1
+ /nRTyHsXU5qmvUgjrUKctaZlvhGRYbW9/85FDAetTWu1sXT9WQxHpUkTnp/5
+ GMUYS8amFLVy2lgVAnvnmNu4vmjMy7z33dr7bT+sSskpnhCx1gwgzq0P+0tm
+ IdKlZG/t22+OAEDaeu+bVKWRnKvW2lozADprmTksOxHx3RZhsnZI6UTkiDCl
+ ozG21mSMcc5/5cFb9+9uRRiVBVAiCForZnr69D93zu9qrZYQVuMdEWFm4UZm
+ TOkIAK3lEBYAyDl1fQ8AiBiW2xgX5zelBBFBAACrakVmbjVba4+HS62NdUNr
+ TWkjwtaNAFJK0ZpyTl3Xt1piDMyMqEUkp5NSGgBEBGtU7s59RESlwjI7P5YS
+ asnjeKfVmNOc0yRAhCAAznkOSy7FAHCK0ippEW6tJREGKcMbX/8/NdjEc4Vb
+ FtcAAAAASUVORK5CYII=
