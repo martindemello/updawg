@@ -36,7 +36,9 @@ public class Updawg : Hildon.Program {
 
     input.set("hildon-input-mode", Hildon.GtkInputMode.FULL);
     output.set_model(list_model);
-    output.insert_column_with_attributes (-1, "Anagrams", new CellRendererText (), "text", 0);
+    CellRendererText renderer = new CellRendererText ();
+		renderer.size = 18;
+    output.insert_column_with_attributes (-1, "Anagrams", renderer, "text", 0);
     scroll.mov_mode = Hildon.MovementMode.VERT;
     scroll.add_with_viewport (output);
 
