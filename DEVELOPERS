@@ -1,0 +1,9 @@
+Making a debian package:
+
+# make the package
+$ apt-get install debhelper
+$ dch -i
+$ dpkg-buildpackage -rfakeroot
+
+# check
+$ dpkg-deb -c updawg_0.1_armel.deb

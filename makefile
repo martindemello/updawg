@@ -8,7 +8,7 @@ EXECS = updawg updawg-cli
 default : updawg
 
 clean:
-	rm *.o *.so* *.a SpellLib/*.o $(EXECS)
+	rm -f *.o *.so* *.a SpellLib/*.o $(EXECS)
 
 libspell.a :
 	cd SpellLib; make ../libspell.a
@@ -20,7 +20,7 @@ libdawg.a : dawg_words.o wild.o libspell.a
 updawg : updawg.vala libdawg.a
 	valac -o updawg $(VALAGUIFLAGS) $(VALACFLAGS) updawg.vala dawgsearch.vala
 
-cli : updawg-cli.vala libdawg.a
+updawg-cli : updawg-cli.vala libdawg.a
 	valac -o updawg-cli $(VALACLIFLAGS) $(VALACFLAGS) --Xcc="-lreadline" updawg-cli.vala dawgsearch.vala
 
 wild: wild.vala libdawg.a
